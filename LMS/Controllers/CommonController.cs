@@ -29,8 +29,15 @@ namespace LMS.Controllers
         /// </summary>
         /// <returns>The JSON array</returns>
         public IActionResult GetDepartments()
-        {            
-            return Json(null);
+        {
+            var query = from d in db.Departments
+                        select new
+                        {
+                            name = d.Name,
+                            subject = d.SubjectAbbreviation
+                        };
+            
+            return Json(query.ToArray());
         }
 
 
@@ -47,7 +54,20 @@ namespace LMS.Controllers
         /// </summary>
         /// <returns>The JSON array</returns>
         public IActionResult GetCatalog()
-        {            
+        {
+            // TODO: figure out how to split the json queries into matching by dept
+            // maybe consider combining it into one query?
+            var query = from c in db.Departments
+                        select new
+                        {
+                            subject = c.SubjectAbbreviation,
+                            dname = c.Name
+                        };
+            var query2 = from c in db.Courses
+                         select new
+                         {
+
+                         };
             return Json(null);
         }
 
