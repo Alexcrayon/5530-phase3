@@ -3,9 +3,11 @@
 #nullable disable
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Encodings.Web;
 using System.Threading;
@@ -194,7 +196,93 @@ namespace LMS.Areas.Identity.Pages.Account
         /// <returns>The uID of the new user</returns>
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
-            return "unknown";
+           
+
+            // (select max(uID) as x from Administrators) union(select max(uID) as x from Professors)
+            // union(select max(uID) as x from Students) order by x desc limit 1;
+
+            // TODO: need to be tested after common controller is implemented 
+            var queryAd =
+                from ad in db.Administrators
+                select ad.UId.Max();
+                
+            
+            var queryS =
+              from s in db.Students
+              select
+                  s.UId.Max();
+            var queryP =
+              from p in db.Professors
+              select p.UId.Max();
+
+            
+            var uID = new[] { queryAd.ToString(), queryS.ToString(), queryP.ToString() }.Max() + 1 ;
+            
+            Console.WriteLine( uID );
+
+            if (role.Equals("Administrator"))
+            {
+                Administrator admin = new Administrator();
+                admin.FirstName = firstName;
+                admin.LastName = lastName;
+                admin.Dob = DateOnly.FromDateTime(DOB);
+
+                admin.UId = uID;
+                //...
+
+                
+                db.Add(admin);
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch { 
+                    
+                }
+            }
+            else if (role.Equals("Students"))
+            {
+                Student s = new Student();
+                s.FirstName = firstName;
+                s.LastName = lastName;
+                s.Dob = DateOnly.FromDateTime(DOB);
+
+                s.UId = uID;
+                //...
+                s.Major = departmentAbbrev;
+
+                db.Add(s);
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch
+                {
+
+                }
+            }
+            else
+            {
+                Professor p = new Professor();
+                p.FirstName = firstName;
+                p.LastName = lastName;
+                p.Dob = DateOnly.FromDateTime(DOB);
+
+                p.UId = uID;
+                //...
+                p.WorksIn = departmentAbbrev;
+
+                db.Add(p);
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch
+                {
+
+                }
+            }
+                return uID;
         }
 
         /*******End code to modify********/
