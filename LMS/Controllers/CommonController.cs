@@ -162,7 +162,9 @@ namespace LMS.Controllers
                         };
             if (query.Any())
             {
-                return Json(query);
+               
+                return Json(query.First());
+            
             }
             else
             {
@@ -178,7 +180,7 @@ namespace LMS.Controllers
                             };
                 if (queryP.Any())
                 {
-                    return Json(queryP);
+                    return Json(queryP.First());
 
                 }
                 else
@@ -195,7 +197,7 @@ namespace LMS.Controllers
                                  };
                     if (queryS.Any())
                     {
-                        return Json(queryS);
+                        Json(queryS.First());
                     }
                    
                 }

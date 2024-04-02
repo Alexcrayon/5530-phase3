@@ -36,14 +36,18 @@ namespace LMSControllerTests
 
             var user = ctrl.GetUser("u0000001") as JsonResult;
             
+            
             //var allDepts = ctrl.GetDepartments() as JsonResult;
           
             dynamic x = user.Value;
                 
-            Console.WriteLine(x.ToString());
-           
+            //Console.WriteLine(x.ToString());
+
+            //Assert.Equal(1, x.Length);
+            Assert.Equal("John", x.fname);
+            Assert.Equal("Doe", x.lname);
             Assert.Equal("u0000001", x.uid);
-            
+
         }
 
 
