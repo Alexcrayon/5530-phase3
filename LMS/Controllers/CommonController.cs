@@ -57,18 +57,26 @@ namespace LMS.Controllers
         {
             // TODO: figure out how to split the json queries into matching by dept
             // maybe consider combining it into one query?
-            var query = from c in db.Departments
+            var query = from d in db.Departments
                         select new
                         {
-                            subject = c.SubjectAbbreviation,
-                            dname = c.Name
+                            subject = d.SubjectAbbreviation,
+                            dname = d.Name,
+                            //nested select
+                            //courses = from c in d.Courses
+                            //          select new
+                            //          {
+                            //              number = c.Number,
+                            //              cname = c.Name
+                            //          }
                         };
+
             var query2 = from c in db.Courses
                          select new
                          {
 
                          };
-            return Json(null);
+            return Json(query.ToArray());
         }
 
         /// <summary>
