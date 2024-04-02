@@ -63,19 +63,15 @@ namespace LMS.Controllers
                             subject = d.SubjectAbbreviation,
                             dname = d.Name,
                             //nested select
-                            //courses = from c in d.Courses
-                            //          select new
-                            //          {
-                            //              number = c.Number,
-                            //              cname = c.Name
-                            //          }
+                            courses = from c in d.Courses
+                                      select new
+                                      {
+                                          number = c.Number,
+                                          cname = c.Name
+                                      }
                         };
 
-            var query2 = from c in db.Courses
-                         select new
-                         {
-
-                         };
+            
             return Json(query.ToArray());
         }
 
@@ -153,7 +149,60 @@ namespace LMS.Controllers
         /// or an object containing {success: false} if the user doesn't exist
         /// </returns>
         public IActionResult GetUser(string uid)
-        {           
+        {
+
+            var query = from a in db.Administrators
+                        where a.UId.Equals(uid)
+                        select new
+                        {
+                            fname = a.FirstName,
+                            lname = a.LastName,
+                            uid = a.UId,
+
+                        };
+            if (query.Any())
+            {
+                return Json(query);
+            }
+            else
+            {
+                var queryP = from p in db.Professors
+                            where p.UId.Equals(uid)
+                            select new
+                            {
+                                fname = p.FirstName,
+                                lname = p.LastName,
+                                uid = p.UId,
+                                department = p.WorksIn
+
+                            };
+                if (queryP.Any())
+                {
+                    return Json(queryP);
+
+                }
+                else
+                {
+                    var queryS = from s in db.Students
+                                 where s.UId.Equals(uid)
+                                 select new
+                                 {
+                                     fname = s.FirstName,
+                                     lname = s.LastName,
+                                     uid = s.UId,
+                                     department = s.Major
+
+                                 };
+                    if (queryS.Any())
+                    {
+                        return Json(queryS);
+                    }
+                   
+                }
+            }
+            
+
+
             return Json(new { success = false });
         }
 

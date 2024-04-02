@@ -29,17 +29,21 @@ namespace LMSControllerTests
         }
 
         [Fact]
-        public void TestUid()
+        public void TestGetUser()
         {
             // An example of a simple unit test on the CommonController
             CommonController ctrl = new CommonController(MakeTinyDB());
 
+            var user = ctrl.GetUser("u0000001") as JsonResult;
+            
             //var allDepts = ctrl.GetDepartments() as JsonResult;
-
-            //dynamic x = allDepts.Value;
-
-            //Assert.Equal(1, x.Length);
-            //Assert.Equal("CS", x[0].subject);
+          
+            dynamic x = user.Value;
+                
+            Console.WriteLine(x.ToString());
+           
+            Assert.Equal("u0000001", x.uid);
+            
         }
 
 
