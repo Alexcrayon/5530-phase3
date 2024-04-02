@@ -90,8 +90,27 @@ namespace LMS.Controllers
         /// <param name="number">The course number, as in 5530</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetClassOfferings(string subject, int number)
-        {            
-            return Json(null);
+        {
+            var query = from c in db.Courses
+                        where c.Number.Equals(number)
+                        && c.Name.Equals(subject)
+                        select
+                            from j in c.Classes
+                            select new
+                            {
+                                season = j.Semester,
+                                year = j.SemesterYear,
+                                location = j.Loc,
+                                start = j.Start,
+                                end = j.End,
+                                fname = from p in db.Professors
+                                        where p.UId == j.Teacher
+                                        select p.FirstName,
+                                lname = from p in db.Professors
+                                        where p.UId == j.Teacher
+                                        select p.LastName
+                            };
+                        return Json(query.ToArray());
         }
 
         /// <summary>
@@ -106,8 +125,21 @@ namespace LMS.Controllers
         /// <param name="category">The name of the assignment category in the class</param>
         /// <param name="asgname">The name of the assignment in the category</param>
         /// <returns>The assignment contents</returns>
-        public IActionResult GetAssignmentContents(string subject, int num, string season, int year, string category, string asgname)
+        public IActionResult GetAssignmentContents(string subject, int num, string season, int year, 
+            string category, string asgname)
         {            
+            // subject is in departments as subjectabbreviation
+            // num is in courses as number
+            // season is in classes as semester
+            // year is in classes as semesteryear
+            // category is in assignmentcategory as name
+            // asgname is in assignments as name
+            var query = from s in db.Courses
+                        where s.DeptNavigation.SubjectAbbreviation == subject
+                        select new
+                        {
+
+                        }
             return Content("");
         }
 
