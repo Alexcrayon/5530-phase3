@@ -110,6 +110,9 @@ namespace LMS.Controllers
                                         where p.UId == j.Teacher
                                         select p.LastName
                             };
+
+
+            //rewrite the query
                         return Json(query.ToArray());
         }
 
@@ -173,7 +176,17 @@ namespace LMS.Controllers
         /// <returns>The submission text</returns>
         public IActionResult GetSubmissionText(string subject, int num, string season, int year, string category, string asgname, string uid)
         {            
-            return Content("");
+            var query = from s in db.Submissions
+                        where s.UId.Equals(uid) && s.AIdNavigation.Name.Equals(asgname) &&
+                        s.AIdNavigation.CategoriesNavigation.Name.Equals(category) &&
+                        s.AIdNavigation.CategoriesNavigation.Class.SemesterYear == year &&
+                        s.AIdNavigation.CategoriesNavigation.Class.Semester.Equals(season) &&
+                        s.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
+                        s.AIdNavigation.CategoriesNavigation.Class.Course.DeptNavigation.SubjectAbbreviation.Equals(subject)
+                        select s.Contents;
+
+
+            return Content(query.First());
         }
 
 

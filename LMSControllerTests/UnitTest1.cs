@@ -51,6 +51,33 @@ namespace LMSControllerTests
         }
 
         [Fact]
+        public void TestGetClassOfferings()
+        {
+            // An example of a simple unit test on the CommonController
+            CommonController ctrl = new CommonController(MakeTinyDB());
+
+            var classes = ctrl.GetClassOfferings("CS", 5530 ) as JsonResult;
+
+
+            //var allDepts = ctrl.GetDepartments() as JsonResult;
+
+            dynamic x = classes.Value;
+
+            //Console.WriteLine(x.ToString());
+
+            Assert.Equal(2, x.Length);
+            /// "season": the season part of the semester, such as "Fall"
+            /// "year": the year part of the semester
+            /// "location": the location of the class
+            /// "start": the start time in format "hh:mm:ss"
+            /// "end": the end time in format "hh:mm:ss"
+            /// "fname": the first name of the professor
+            /// "lname": the last name of the professor
+            Assert.Equal("Spring", x[0].season);
+
+        }
+
+        [Fact]
         public void TestGetAssignmentContents()
         {
             // An example of a simple unit test on the CommonController
@@ -65,6 +92,23 @@ namespace LMSControllerTests
             
             Assert.Equal("Quiz for Chapter1", x);
 
+        }
+
+        [Fact]
+        public void TestGetSubmissionContents()
+        {
+            // An example of a simple unit test on the CommonController
+            CommonController ctrl = new CommonController(MakeTinyDB());
+
+            var aContent = ctrl.GetSubmissionText("CS", 5530, "Spring", 2024, "Quiz", "Quiz1", "u0000004") as ContentResult;
+            var aContent2 = ctrl.GetSubmissionText("CS", 5530, "Spring", 2024, "Quiz", "Quiz1", "u0000005") as ContentResult;
+
+
+            dynamic x = aContent.Content;
+            dynamic y = aContent2.Content;
+
+            Assert.Equal("Q1 answer from John", x);
+            Assert.Equal("Q1 answer from Mary", y);
         }
 
 
@@ -105,10 +149,13 @@ namespace LMSControllerTests
             
             db.Courses.Add(new Course { Name = "Database Systems", Number = 5530, Dept = "CS", CourseId = 1 });
             db.Classes.Add(new Class { ClassId = 1, CourseId = 1, Loc = "Online", Start = new TimeOnly(00, 00, 00), End = new TimeOnly(00, 00, 00), Semester = "Spring", SemesterYear = 2024, Teacher = "u0000007" });
+            db.Classes.Add(new Class { ClassId = 2, CourseId = 1, Loc = "WEB 1000", Start = new TimeOnly(8, 00, 00), End = new TimeOnly(9, 00, 00), Semester = "Spring", SemesterYear = 2024, Teacher = "u0000008" });
+
             db.AssignmentCategories.Add(new AssignmentCategory {  Name ="Quiz", GradingWeight = 10, ClassId = 1, AcId = 1 });
             db.Assignments.Add(new Assignment { Name = "Quiz1", MaxPointVal = 100, Contents = "Quiz for Chapter1", Due = new DateTime(2024, 4, 3, 23, 59, 0), Categories = 1, AId = 1 });
 
-
+            db.Submissions.Add(new Submission {DateTime = new DateTime(2024, 4, 3, 23, 58, 0), UId = "u0000004", AId = 1, Score = 100, Contents = "Q1 answer from John" });
+            db.Submissions.Add(new Submission { DateTime = new DateTime(2024, 4, 3, 23, 58, 0), UId = "u0000005", AId = 1, Score = 100, Contents = "Q1 answer from Mary" });
 
             db.SaveChanges();
 
