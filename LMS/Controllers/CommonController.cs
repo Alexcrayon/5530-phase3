@@ -127,20 +127,33 @@ namespace LMS.Controllers
         /// <returns>The assignment contents</returns>
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, 
             string category, string asgname)
-        {            
+        {
             // subject is in departments as subjectabbreviation
             // num is in courses as number
             // season is in classes as semester
             // year is in classes as semesteryear
             // category is in assignmentcategory as name
             // asgname is in assignments as name
-            var query = from s in db.Courses
-                        where s.DeptNavigation.SubjectAbbreviation == subject
-                        select new
-                        {
 
-                        }
-            return Content("");
+            //var query = from s in db.Courses
+            //            where s.DeptNavigation.SubjectAbbreviation == subject
+            //            select new
+            //            {
+
+            //            };
+
+            // use navigation go backward from assignment to category to class to course, etc. 
+            var query = from a in db.Assignments
+                        where a.Name.Equals(asgname) &&
+                        a.CategoriesNavigation.Name.Equals(category)&&
+                        a.CategoriesNavigation.Class.SemesterYear == year &&
+                        a.CategoriesNavigation.Class.Semester.Equals(season) &&
+                        a.CategoriesNavigation.Class.Course.Number == num &&
+                        a.CategoriesNavigation.Class.Course.DeptNavigation.SubjectAbbreviation.Equals(subject)
+                        select a.Contents;
+
+
+            return Content(query.First());
         }
 
 
