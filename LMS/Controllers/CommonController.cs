@@ -91,28 +91,42 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetClassOfferings(string subject, int number)
         {
-            var query = from c in db.Courses
-                        where c.Number.Equals(number)
-                        && c.Name.Equals(subject)
-                        select
-                            from j in c.Classes
-                            select new
-                            {
-                                season = j.Semester,
-                                year = j.SemesterYear,
-                                location = j.Loc,
-                                start = j.Start,
-                                end = j.End,
-                                fname = from p in db.Professors
-                                        where p.UId == j.Teacher
-                                        select p.FirstName,
-                                lname = from p in db.Professors
-                                        where p.UId == j.Teacher
-                                        select p.LastName
-                            };
+            //var query = from c in db.Courses
+            //            where c.Number.Equals(number)
+            //            && c.Name.Equals(subject)
+            //            select
+            //                from j in c.Classes
+            //                select new
+            //                {
+            //                    season = j.Semester,
+            //                    year = j.SemesterYear,
+            //                    location = j.Loc,
+            //                    start = j.Start,
+            //                    end = j.End,
+            //                    fname = from p in db.Professors
+            //                            where p.UId == j.Teacher
+            //                            select p.FirstName,
+            //                    lname = from p in db.Professors
+            //                            where p.UId == j.Teacher
+            //                            select p.LastName
+            //                };
 
 
             //rewrite the query
+            var query = from c in db.Classes
+                        where c.Course.Number == number &&
+                        c.Course.Dept == subject
+                        select new
+                        {
+                            season = c.Semester,
+                            year = c.SemesterYear,
+                            location = c.Loc,
+                            start = c.Start,
+                            end = c.End,
+                            fname = c.TeacherNavigation.FirstName,
+                            lname = c.TeacherNavigation.LastName
+                        };
+
                         return Json(query.ToArray());
         }
 

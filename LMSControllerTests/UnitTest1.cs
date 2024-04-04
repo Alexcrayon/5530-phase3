@@ -11,11 +11,9 @@ namespace LMSControllerTests
 {
     public class UnitTest1
     {
-        // Uncomment the methods below after scaffolding
-        // (they won't compile until then)
-
+        // Common controller tests
         [Fact]
-        public void Test1()
+        public void CCBasic()
         {
             // An example of a simple unit test on the CommonController
             CommonController ctrl = new CommonController(MakeTinyDB());
@@ -29,7 +27,7 @@ namespace LMSControllerTests
         }
 
         [Fact]
-        public void TestGetUser()
+        public void CCTestGetUser()
         {
             // An example of a simple unit test on the CommonController
             CommonController ctrl = new CommonController(MakeTinyDB());
@@ -51,7 +49,7 @@ namespace LMSControllerTests
         }
 
         [Fact]
-        public void TestGetClassOfferings()
+        public void CCTestGetClassOfferings()
         {
             // An example of a simple unit test on the CommonController
             CommonController ctrl = new CommonController(MakeTinyDB());
@@ -74,11 +72,12 @@ namespace LMSControllerTests
             /// "fname": the first name of the professor
             /// "lname": the last name of the professor
             Assert.Equal("Spring", x[0].season);
-
+            Assert.Equal("John", x[0].fname);
+            Assert.Equal("Mary", x[1].fname);
         }
 
         [Fact]
-        public void TestGetAssignmentContents()
+        public void CCTestGetAssignmentContents()
         {
             // An example of a simple unit test on the CommonController
             CommonController ctrl = new CommonController(MakeTinyDB());
@@ -95,7 +94,7 @@ namespace LMSControllerTests
         }
 
         [Fact]
-        public void TestGetSubmissionContents()
+        public void CCTestGetSubmissionContents()
         {
             // An example of a simple unit test on the CommonController
             CommonController ctrl = new CommonController(MakeTinyDB());
@@ -111,6 +110,21 @@ namespace LMSControllerTests
             Assert.Equal("Q1 answer from Mary", y);
         }
 
+        //Admin controller tests
+        [Fact]
+        public void AGetCourses()
+        {
+            // An example of a simple unit test on the CommonController
+            AdministratorController ctrl = new AdministratorController(MakeTinyDB());
+
+            var courses = ctrl.GetCourses("CS") as JsonResult;
+
+            dynamic x = courses.Value;
+
+            Assert.Equal(5530, (int)x[0].number);
+            Assert.Equal("Database Systems", x[0].name);
+
+        }
 
         ///// <summary>
         ///// Make a very tiny in-memory database, containing just one department
