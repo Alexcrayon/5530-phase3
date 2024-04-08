@@ -161,12 +161,32 @@ namespace LMSControllerTests
 
         }
 
-            ///// <summary>
-            ///// Make a very tiny in-memory database, containing just one department
-            ///// and nothing else.
-            ///// </summary>
-            ///// <returns></returns>
-            LMSContext MakeTinyDB()
+        [Fact]
+        public void ACreateClass()
+        {
+            AdministratorController ctrl = new AdministratorController(MakeTinyDB());
+
+            var createdClass = ctrl.CreateClass("CS", 5530, "Fall", 2000, new DateTime(2024, 4, 3, 20, 59, 0),
+               new DateTime(2024, 4, 3, 23, 59, 0), "WEB", "u0000008") as JsonResult;
+            //var dupClass = ctrl.CreateClass("CS", 5530, "Database Systems") as JsonResult;
+
+
+            dynamic x = createdClass.Value;
+            //dynamic y = dupClass.Value;
+
+            Assert.True(x.success);
+            //Assert.False(y.success);
+
+
+        }
+
+
+        ///// <summary>
+        ///// Make a very tiny in-memory database, containing just one department
+        ///// and nothing else.
+        ///// </summary>
+        ///// <returns></returns>
+        LMSContext MakeTinyDB()
         {
             var contextOptions = new DbContextOptionsBuilder<LMSContext>()
             .UseInMemoryDatabase("LMSControllerTest")

@@ -4,8 +4,10 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -144,7 +146,10 @@ namespace LMS.Controllers
                        select d;
 
             Department dept = query.SingleOrDefault();
-
+            if (dept == null)
+            {
+                return Json(new { success = false });
+            }
 
             Course course = new Course();
             course.Number = (uint)number;
@@ -186,8 +191,53 @@ namespace LMS.Controllers
         /// a Class offering of the same Course in the same Semester,
         /// true otherwise.</returns>
         public IActionResult CreateClass(string subject, int number, string season, int year, DateTime start, DateTime end, string location, string instructor)
-        {            
-            return Json(new { success = false});
+        {
+
+            var query = from c in db.Courses
+                        where c.Dept == subject &&
+                        c.Number == number
+                        select c;
+
+            Course course = query.SingleOrDefault();
+            if (course == null)
+            {
+                return Json(new { success = false });
+            }
+
+            Class classCreated = new()
+            {
+                Loc = location,
+                Semester = season,
+                SemesterYear = (uint)year,
+                Start = TimeOnly.FromDateTime(start),
+                End = TimeOnly.FromDateTime(end),
+                Teacher = instructor
+            };
+            var timeQuery = from c in db.Classes
+                            where c.Loc == classCreated.Loc &&
+                            c.Start <= classCreated.Start &&
+                            c.End >= classCreated.End
+                            select c;
+
+            if (timeQuery.Any())
+            {
+                return Json(new { success = false });
+            }
+
+            course.Classes.Add(classCreated);
+            db.Classes.Add(classCreated);
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+
+            return Json(new { success = true });
+
         }
 
 
