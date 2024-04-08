@@ -203,22 +203,26 @@ namespace LMS.Areas.Identity.Pages.Account
 
             // TODO: need to be tested after common controller is implemented 
             var queryAd =
-                from ad in db.Administrators
-                select ad.UId.Max();
+                (from ad in db.Administrators
+                select ad.UId).Max();
                 
             
             var queryS =
-              from s in db.Students
-              select
-                  s.UId.Max();
-            var queryP =
-              from p in db.Professors
-              select p.UId.Max();
+              (from s in db.Students
+              select s.UId).Max();
 
+            var queryP =
+              (from p in db.Professors
+              select p.UId).Max();
+
+            string maxuid = new List<string> { queryAd, queryS, queryP }.Max();
             
-            var uID = new[] { queryAd.ToString(), queryS.ToString(), queryP.ToString() }.Max() + 1 ;
-            
-            //Console.WriteLine( uID );
+            //increment the max uid by 1 to create the new uid
+            int newUid = Int32.Parse(maxuid.Substring(1)) + 1;
+
+            //format it with necessary 0 padding
+            string uID = "u" + newUid.ToString("D7");
+          
 
             if (role.Equals("Administrator"))
             {
@@ -226,9 +230,7 @@ namespace LMS.Areas.Identity.Pages.Account
                 admin.FirstName = firstName;
                 admin.LastName = lastName;
                 admin.Dob = DateOnly.FromDateTime(DOB);
-
                 admin.UId = uID;
-                //...
 
                 db.Administrators.Add( admin );
                 //db.Add(admin);
@@ -246,9 +248,8 @@ namespace LMS.Areas.Identity.Pages.Account
                 s.FirstName = firstName;
                 s.LastName = lastName;
                 s.Dob = DateOnly.FromDateTime(DOB);
-
                 s.UId = uID;
-                //...
+            
                 s.Major = departmentAbbrev;
 
                 db.Students.Add(s);
@@ -267,9 +268,7 @@ namespace LMS.Areas.Identity.Pages.Account
                 p.FirstName = firstName;
                 p.LastName = lastName;
                 p.Dob = DateOnly.FromDateTime(DOB);
-
                 p.UId = uID;
-                //...
                 p.WorksIn = departmentAbbrev;
 
                 db.Professors.Add(p);
