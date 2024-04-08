@@ -218,7 +218,7 @@ namespace LMS.Areas.Identity.Pages.Account
             
             var uID = new[] { queryAd.ToString(), queryS.ToString(), queryP.ToString() }.Max() + 1 ;
             
-            Console.WriteLine( uID );
+            //Console.WriteLine( uID );
 
             if (role.Equals("Administrator"))
             {
@@ -230,8 +230,8 @@ namespace LMS.Areas.Identity.Pages.Account
                 admin.UId = uID;
                 //...
 
-                
-                db.Add(admin);
+                db.Administrators.Add( admin );
+                //db.Add(admin);
                 try
                 {
                     db.SaveChanges();
@@ -251,7 +251,7 @@ namespace LMS.Areas.Identity.Pages.Account
                 //...
                 s.Major = departmentAbbrev;
 
-                db.Add(s);
+                db.Students.Add(s);
                 try
                 {
                     db.SaveChanges();
@@ -272,7 +272,7 @@ namespace LMS.Areas.Identity.Pages.Account
                 //...
                 p.WorksIn = departmentAbbrev;
 
-                db.Add(p);
+                db.Professors.Add(p);
                 try
                 {
                     db.SaveChanges();

@@ -125,13 +125,48 @@ namespace LMSControllerTests
             Assert.Equal("Database Systems", x[0].name);
 
         }
+        [Fact]
+        public void AGetProf()
+        {
+            // An example of a simple unit test on the CommonController
+            AdministratorController ctrl = new AdministratorController(MakeTinyDB());
 
-        ///// <summary>
-        ///// Make a very tiny in-memory database, containing just one department
-        ///// and nothing else.
-        ///// </summary>
-        ///// <returns></returns>
-        LMSContext MakeTinyDB()
+            var profs = ctrl.GetProfessors("CS") as JsonResult;
+
+            dynamic x = profs.Value;
+
+            Assert.Equal("John", x[0].fname);
+            Assert.Equal("Doe", x[0].lname);
+            Assert.Equal("u0000007", x[0].uid);
+
+            Assert.Equal("Mary", x[1].fname);
+            Assert.Equal("Doe", x[1].lname);
+            Assert.Equal("u0000008", x[1].uid);
+        }
+        [Fact]
+        public void ACreateCourse()
+        {
+            AdministratorController ctrl = new AdministratorController(MakeTinyDB());
+
+            var course = ctrl.CreateCourse("CS", 3500, "Software Pratice") as JsonResult;
+            var dupCourse = ctrl.CreateCourse("CS", 5530, "Database Systems") as JsonResult;
+
+
+            dynamic x = course.Value;
+            dynamic y = dupCourse.Value;
+
+            Assert.True(x.success);
+            //Assert.False(y.success);
+
+
+        }
+
+            ///// <summary>
+            ///// Make a very tiny in-memory database, containing just one department
+            ///// and nothing else.
+            ///// </summary>
+            ///// <returns></returns>
+            LMSContext MakeTinyDB()
         {
             var contextOptions = new DbContextOptionsBuilder<LMSContext>()
             .UseInMemoryDatabase("LMSControllerTest")

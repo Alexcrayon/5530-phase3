@@ -6,6 +6,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 [assembly: InternalsVisibleTo( "LMSControllerTests" )]
@@ -69,8 +70,8 @@ namespace LMS.Controllers
                     db.SaveChanges();
                 }
                 catch 
-                { 
-                
+                {
+                    return Json(new { success = false });
                 }
                 return Json(new { success = true });
             }
@@ -111,8 +112,16 @@ namespace LMS.Controllers
         /// <returns>The JSON result</returns>
         public IActionResult GetProfessors(string subject)
         {
-            
-            return Json(null);
+            var query = from d in db.Departments
+                        where d.SubjectAbbreviation == subject
+                        from p in db.Professors
+                        select new
+                        {
+                            lname = p.LastName,
+                            fname = p.FirstName,
+                            uid = p.UId
+                        };
+            return Json(query.ToArray());
             
         }
 
@@ -128,8 +137,34 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = true/false}.
         /// false if the course already exists, true otherwise.</returns>
         public IActionResult CreateCourse(string subject, int number, string name)
-        {           
-            return Json(new { success = false });
+        {
+
+            var query = from d in db.Departments
+                       where d.SubjectAbbreviation == subject
+                       select d;
+
+            Department dept = query.SingleOrDefault();
+
+
+            Course course = new Course();
+            course.Number = (uint)number;
+            course.Name = name;
+            course.Dept = subject;
+            
+            dept.Courses.Add(course);
+            
+            
+            db.Courses.Add(course);
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+            
+            return Json(new { success = true });
         }
 
 
