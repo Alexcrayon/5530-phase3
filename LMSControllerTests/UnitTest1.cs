@@ -167,16 +167,30 @@ namespace LMSControllerTests
             AdministratorController ctrl = new AdministratorController(MakeTinyDB());
 
             var createdClass = ctrl.CreateClass("CS", 5530, "Fall", 2000, new DateTime(2024, 4, 3, 20, 59, 0),
-               new DateTime(2024, 4, 3, 23, 59, 0), "WEB", "u0000008") as JsonResult;
+               new DateTime(2024, 4, 3, 22, 59, 0), "WEB", "u0000008") as JsonResult;
             //var dupClass = ctrl.CreateClass("CS", 5530, "Database Systems") as JsonResult;
 
 
+
+            var class2 = ctrl.CreateClass("CS", 5530, "Fall", 2000, new DateTime(2024, 4, 3, 19, 59, 0),
+               new DateTime(2024, 4, 3, 22, 59, 0), "WEB", "u0000008") as JsonResult;
+
+            var class3 = ctrl.CreateClass("CS", 3500, "Fall", 2000, new DateTime(2024, 4, 3, 21, 59, 0),
+                new DateTime(2024, 4, 3, 23, 59, 0), "WEB", "u0000008") as JsonResult;
+
             dynamic x = createdClass.Value;
             //dynamic y = dupClass.Value;
+            dynamic x2 = class2.Value;
+
+            dynamic x3 = class3.Value;
+
 
             Assert.True(x.success);
-            //Assert.False(y.success);
+            
+            Assert.False(x2.success);
 
+            Assert.False(x3.success);
+            
 
         }
 
@@ -217,14 +231,14 @@ namespace LMSControllerTests
             
             
             db.Courses.Add(new Course { Name = "Database Systems", Number = 5530, Dept = "CS", CourseId = 1 });
-            db.Classes.Add(new Class { ClassId = 1, CourseId = 1, Loc = "Online", Start = new TimeOnly(00, 00, 00), End = new TimeOnly(00, 00, 00), Semester = "Spring", SemesterYear = 2024, Teacher = "u0000007" });
-            db.Classes.Add(new Class { ClassId = 2, CourseId = 1, Loc = "WEB 1000", Start = new TimeOnly(8, 00, 00), End = new TimeOnly(9, 00, 00), Semester = "Spring", SemesterYear = 2024, Teacher = "u0000008" });
+            //db.Classes.Add(new Class { ClassId = 1, CourseId = 1, Loc = "Online", Start = new TimeOnly(00, 00, 00), End = new TimeOnly(00, 00, 00), Semester = "Spring", SemesterYear = 2024, Teacher = "u0000007" });
+            //db.Classes.Add(new Class { ClassId = 2, CourseId = 1, Loc = "WEB 1000", Start = new TimeOnly(8, 00, 00), End = new TimeOnly(9, 00, 00), Semester = "Spring", SemesterYear = 2024, Teacher = "u0000008" });
 
-            db.AssignmentCategories.Add(new AssignmentCategory {  Name ="Quiz", GradingWeight = 10, ClassId = 1, AcId = 1 });
-            db.Assignments.Add(new Assignment { Name = "Quiz1", MaxPointVal = 100, Contents = "Quiz for Chapter1", Due = new DateTime(2024, 4, 3, 23, 59, 0), Categories = 1, AId = 1 });
+            //db.AssignmentCategories.Add(new AssignmentCategory {  Name ="Quiz", GradingWeight = 10, ClassId = 1, AcId = 1 });
+            //db.Assignments.Add(new Assignment { Name = "Quiz1", MaxPointVal = 100, Contents = "Quiz for Chapter1", Due = new DateTime(2024, 4, 3, 23, 59, 0), Categories = 1, AId = 1 });
 
-            db.Submissions.Add(new Submission {DateTime = new DateTime(2024, 4, 3, 23, 58, 0), UId = "u0000004", AId = 1, Score = 100, Contents = "Q1 answer from John" });
-            db.Submissions.Add(new Submission { DateTime = new DateTime(2024, 4, 3, 23, 58, 0), UId = "u0000005", AId = 1, Score = 100, Contents = "Q1 answer from Mary" });
+            //db.Submissions.Add(new Submission {DateTime = new DateTime(2024, 4, 3, 23, 58, 0), UId = "u0000004", AId = 1, Score = 100, Contents = "Q1 answer from John" });
+            //db.Submissions.Add(new Submission { DateTime = new DateTime(2024, 4, 3, 23, 58, 0), UId = "u0000005", AId = 1, Score = 100, Contents = "Q1 answer from Mary" });
 
             db.SaveChanges();
 
