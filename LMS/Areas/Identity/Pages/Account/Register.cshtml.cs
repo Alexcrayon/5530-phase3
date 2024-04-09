@@ -242,7 +242,7 @@ namespace LMS.Areas.Identity.Pages.Account
                     
                 }
             }
-            else if (role.Equals("Students"))
+            else if (role.Equals("Student"))
             {
                 Student s = new Student();
                 s.FirstName = firstName;

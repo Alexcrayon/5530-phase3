@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 [assembly: InternalsVisibleTo( "LMSControllerTests" )]
@@ -75,8 +76,19 @@ namespace LMS.Controllers
         /// <param name="uid">The uid of the student</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
-        {           
-            return Json(null);
+        {
+            var query = from c in db.Enrollments
+                        where c.UId == uid
+                        select new
+                        {
+                            subject = c.Class.Course.Dept,
+                            number = c.Class.Course.Number,
+                            name = c.Class.Course.Name,
+                            season = c.Class.Semester,
+                            year = c.Class.SemesterYear,
+                            grade = c.Grade
+                        };
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -94,8 +106,25 @@ namespace LMS.Controllers
         /// <param name="uid"></param>
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
-        {            
-            return Json(null);
+        {
+            var query = from a in db.Assignments
+                        join s in db.Submissions
+                        on new { A = a.AId, B = uid } equals new { A = s.AId, B = s.UId }
+                        into joined
+                        from j in joined.DefaultIfEmpty()
+                        where j.AIdNavigation.CategoriesNavigation.Class.Course.Dept == subject &&
+                        j.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
+                        j.AIdNavigation.CategoriesNavigation.Class.Semester == season &&
+                        j.AIdNavigation.CategoriesNavigation.Class.SemesterYear == year
+                        select new
+                        {
+                            aname = j.AIdNavigation.Name,
+                            cname = j.AIdNavigation.CategoriesNavigation.Name,
+                            due = j.AIdNavigation.Due,
+                            score = j.Score
+                        };
+
+            return Json(query.ToArray());
         }
 
 
