@@ -148,8 +148,56 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing {success = true/false}</returns>
         public IActionResult SubmitAssignmentText(string subject, int num, string season, int year,
           string category, string asgname, string uid, string contents)
-        {           
-            return Json(new { success = false });
+        {
+            var query = from a in db.Assignments
+                        where a.Name.Equals(asgname) &&
+                        a.CategoriesNavigation.Name.Equals(category) &&
+                        a.CategoriesNavigation.Class.SemesterYear == year &&
+                        a.CategoriesNavigation.Class.Semester.Equals(season) &&
+                        a.CategoriesNavigation.Class.Course.Number == num &&
+                        a.CategoriesNavigation.Class.Course.Dept.Equals(subject)
+                        select a.AId;
+
+
+            //insert into Submissions
+            Submission sub = new Submission()
+            {
+                DateTime = DateTime.Now,
+                UId = uid,
+                AId = query.First(),
+                Score = 0,
+                Contents = contents
+            };
+
+
+            var querySub = from s in db.Submissions
+                           where s.AId == sub.AId && s.UId.Equals(uid)
+                           select s;
+            
+            Submission subUpdate = querySub.SingleOrDefault();
+
+            if(subUpdate != null)
+            {
+                subUpdate.Contents = contents;
+                subUpdate.DateTime = DateTime.Now;
+            }
+            else
+            {
+                db.Submissions.Add(sub);
+            }
+
+
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+            
+            return Json(new { success = true });
         }
 
 
