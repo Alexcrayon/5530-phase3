@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -88,6 +89,7 @@ namespace LMS.Controllers
                             year = c.Class.SemesterYear,
                             grade = c.Grade
                         };
+
             return Json(query.ToArray());
         }
 
@@ -111,6 +113,7 @@ namespace LMS.Controllers
                         join s in db.Submissions
                         on new { A = a.AId, B = uid } equals new { A = s.AId, B = s.UId }
                         into joined
+
                         from j in joined.DefaultIfEmpty()
                         where j.AIdNavigation.CategoriesNavigation.Class.Course.Dept == subject &&
                         j.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
@@ -213,7 +216,31 @@ namespace LMS.Controllers
         /// false if the student is already enrolled in the class, true otherwise.</returns>
         public IActionResult Enroll(string subject, int num, string season, int year, string uid)
         {          
-            return Json(new { success = false});
+            var query = from c in db.Classes
+                        where c.Course.Dept == subject &&
+                        c.Course.Number == num &&
+                        c.Semester == season &&
+                        c.SemesterYear == year
+                        select c.ClassId;
+
+            Enrollment enrollment = new()
+            {
+                ClassId = query.First(),
+                UId = uid,
+                Grade = "--"
+            };
+
+            db.Enrollments.Add(enrollment);
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+            return Json(new { success = true});
         }
 
 
@@ -231,7 +258,91 @@ namespace LMS.Controllers
         /// <returns>A JSON object containing a single field called "gpa" with the number value</returns>
         public IActionResult GetGPA(string uid)
         {            
-            return Json(null);
+            var query = from e in db.Enrollments
+                        where e.UId.Equals(uid)
+                        select e.Grade;
+
+            double GPA = 0.0;
+            int numGrades = 0;
+            if (query == null) 
+            {
+                return Json(new { gpa = 0.0 });
+            }
+            foreach (var c in query)
+            {
+                switch (c)
+                {
+                    case "A":
+                        GPA += 4.0;
+                        numGrades++;
+                        break;
+
+                    case "A-":
+                        GPA += 3.7;
+                        numGrades++;
+                        break;
+
+                    case "B+":
+                        GPA += 3.3;
+                        numGrades++;
+                        break;
+
+                    case "B":
+                        GPA += 3.0;
+                        numGrades++;
+                        break;
+
+                    case "B-":
+                        GPA += 2.7;
+                        numGrades++;
+                        break;
+
+                    case "C+":
+                        GPA += 2.3;
+                        numGrades++;
+                        break;
+
+                    case "C":
+                        GPA += 2.0;
+                        numGrades++;
+                        break;
+
+                    case "C-":
+                        GPA += 1.7;
+                        numGrades++;
+                        break;
+
+                    case "D+":
+                        GPA += 1.3;
+                        numGrades++;
+                        break;
+
+                    case "D":
+                        GPA += 1.0;
+                        numGrades++;
+                        break;
+
+                    case "D-":
+                        GPA += 0.7;
+                        numGrades++;
+                        break;
+
+                    case "E":
+                        GPA += 0.0;
+                        numGrades++;
+                        break;
+
+                    case "--": 
+                        break;
+                }
+            }
+
+            if(numGrades != 0)
+            {
+                GPA /= numGrades;
+            }
+            
+            return Json(new {gpa = GPA});
         }
                 
         /*******End code to modify********/
