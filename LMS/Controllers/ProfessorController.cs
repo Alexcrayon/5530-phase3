@@ -1,12 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Metrics;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.VisualBasic;
+using Newtonsoft.Json.Linq;
+using static System.Formats.Asn1.AsnWriter;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 [assembly: InternalsVisibleTo( "LMSControllerTests" )]
@@ -162,7 +172,49 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
         {
-            return Json(null);
+
+            //get category from class 
+            //get array of assignment
+
+            //get class
+            var query = from c in db.Classes
+                        where c.Course.Dept.Equals(subject) &&
+                        c.Course.Number == num &&
+                        c.Semester.Equals(season) &&
+                        c.SemesterYear == year
+                        select c.AssignmentCategories;
+
+            if(category != null)
+            {
+                var queryA = from q in query.First()
+                             where q.Name.Equals(category)
+                             from a in q.Assignments
+                             select new
+                             {
+                                 aname = a.Name,
+                                 cname = q.Name,
+                                 due = a.Due,
+                                 submissions = a.Submissions.Count
+                             };
+                return Json(queryA.ToArray());
+
+            }
+            else
+            {
+                var queryAll = from q in query.First()
+                               from a in q.Assignments
+                               select new
+                               {
+                                   aname = a.Name,
+                                   cname = q.Name,
+                                   due = a.Due,
+                                   submissions = a.Submissions.Count
+                               };
+
+                return Json(queryAll.ToArray());
+            }
+            
+            //return Json(null);
         }
 
 
@@ -180,7 +232,23 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentCategories(string subject, int num, string season, int year)
         {
-            return Json(null);
+            //get class
+            //get array of assignmentcategories
+            var query = from c in db.Classes
+                        where c.Course.Dept.Equals(subject) &&
+                        c.Course.Number == num &&
+                        c.Semester.Equals(season) &&
+                        c.SemesterYear == year
+                        from ac in c.AssignmentCategories
+                        select new
+                        {
+                            name = ac.Name,
+                            weight = ac.GradingWeight
+                        };
+
+
+
+            return Json(query.ToArray());
         }
 
         /// <summary>
@@ -196,7 +264,48 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing {success = true/false} </returns>
         public IActionResult CreateAssignmentCategory(string subject, int num, string season, int year, string category, int catweight)
         {
-            return Json(new { success = false });
+            //insert new category, false if existed
+            //add foreign key in class.assignmentCategories
+
+            var query = from c in db.Classes
+                        where c.Course.Dept.Equals(subject) &&
+                        c.Course.Number == num &&
+                        c.Semester.Equals(season) &&
+                        c.SemesterYear == year
+                        select c;
+
+            Class tempClass = query.SingleOrDefault();
+            if ( tempClass == null)
+            {
+                return Json(new { success = false });
+            }
+
+
+            AssignmentCategory newAc = new()
+            {
+                Name = category,
+                GradingWeight = (uint)catweight,
+                ClassId = tempClass.ClassId
+            };
+
+
+
+            tempClass.AssignmentCategories.Add(newAc);
+              
+         
+            db.AssignmentCategories.Add(newAc);
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+            
+
+            return Json(new { success = true });
         }
 
         /// <summary>
@@ -214,7 +323,53 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult CreateAssignment(string subject, int num, string season, int year, string category, string asgname, int asgpoints, DateTime asgdue, string asgcontents)
         {
-            return Json(new { success = false });
+            //same above
+            //foreign key in assignmentCategory
+
+
+            //auto grading
+
+
+            var query = from ac in db.AssignmentCategories
+                        where ac.Class.Course.Dept.Equals(subject)&&
+                        ac.Class.Course.Number == num &&
+                        ac.Class.Semester.Equals(season) &&
+                        ac.Class.SemesterYear == year &&
+                        ac.Name.Equals(category)
+                        select ac;
+            AssignmentCategory cate = query.SingleOrDefault();
+            if (cate == null)
+            {
+                return Json(new { success = false });
+            }
+
+            Assignment newA = new()
+            {
+                Name = asgname,
+                MaxPointVal = (uint)asgpoints,
+                Contents = asgcontents,
+                Due = asgdue,
+                Categories = cate.AcId
+            };
+
+
+            cate.Assignments.Add(newA);
+
+            db.Assignments.Add(newA);
+
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+
+            AutoGrading();
+
+            return Json(new { success = true });
         }
 
 
@@ -237,7 +392,34 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetSubmissionsToAssignment(string subject, int num, string season, int year, string category, string asgname)
         {
-            return Json(null);
+            //join assignment and submission table
+
+            var query = from a in db.Assignments
+                        where a.CategoriesNavigation.Class.Course.Dept.Equals(subject) &&
+                        a.CategoriesNavigation.Class.Course.Number == num &&
+                        a.CategoriesNavigation.Class.Semester.Equals(season) &&
+                        a.CategoriesNavigation.Class.SemesterYear == year &&
+                        a.CategoriesNavigation.Name.Equals(category) &&
+                        a.Name.Equals(asgname)
+                        select a;
+
+            var querySub = from a in query
+                           join s in db.Submissions
+                           on a.AId equals s.AId
+                           join st in db.Students
+                           on s.UId equals st.UId
+                           select new
+                           {
+                               fname = st.FirstName,
+                               lname = st.LastName,
+                               uid = st.UId,
+                               time = s.DateTime,
+                               score = s.Score
+                           };
+                           
+
+
+            return Json(querySub.ToArray());
         }
 
 
@@ -255,7 +437,50 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
-            return Json(new { success = false });
+            //update score in submission join with assignment
+            // see SubmitAssignmentText in student controller
+            //auto grading
+            
+            var query = from a in db.Assignments
+                        where a.Name.Equals(asgname) &&
+                        a.CategoriesNavigation.Name.Equals(category) &&
+                        a.CategoriesNavigation.Class.SemesterYear == year &&
+                        a.CategoriesNavigation.Class.Semester.Equals(season) &&
+                        a.CategoriesNavigation.Class.Course.Number == num &&
+                        a.CategoriesNavigation.Class.Course.Dept.Equals(subject)
+                        select a.AId;
+
+            
+
+
+            var querySub = from s in db.Submissions
+                           where s.AId == query.First() && s.UId.Equals(uid)
+                           select s;
+
+            Submission subUpdate = querySub.SingleOrDefault();
+
+            if (subUpdate != null)
+            {
+                subUpdate.Score = (uint)score;
+            }
+            else
+            {
+                return Json(new { success = false });
+            }
+
+            try
+            {
+                db.SaveChanges();
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false });
+            }
+
+            AutoGrading();
+
+            return Json(new { success = true });
+
         }
 
 
@@ -271,12 +496,50 @@ namespace LMS_CustomIdentity.Controllers
         /// <param name="uid">The professor'c uid</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
-        {            
-            return Json(null);
+        {
+          
+            var query = from c in db.Classes
+                        where c.Teacher.Equals(uid)
+                        select new
+                        {
+                            subject = c.Course.Dept,
+                            number = c.Course.Number,
+                            name = c.Course.Name,
+                            season = c.Semester,
+                            year = c.SemesterYear
+                        };
+            return Json(query.ToArray());
         }
 
 
-        
+
+        //Letter grades should be calculated as follows:
+
+        //1.If a student does not have a submission for an assignment, the score for that assignment is treated as 0.
+        //2.If an AssignmentCategory does not have any assignments, it is not included in the calculation.
+        //3.For each non-empty category in the class:
+        //  - Calculate the percentage of (total points earned / total max points) of all assignments in the category.
+        //  This should be a number between 0.0 - 1.0. For example, if there are 875 possible points spread among various assignments in the category, and the student earned a total of 800 among all assignments in that category, this value should be ~0.914
+        //  - Multiply the percentage by the category weight.For example, if the category weight is 15,
+        //  then the scaled total for the category is ~13.71 (using the previous example).
+        //4.Compute the total of all scaled category totals from the previous step.IMPORTANT - there is no rule that assignment category weights must sum to 100. Therefore, we have to re-scale in the next step.
+        //5.Compute the scaling factor to make all category weights add up to 100%. This scaling factor is 100 / (sum of all category weights).
+        //6.Multiply the total score you computed in step 4 by the scaling factor you computed in step 5. This is the total percentage the student earned in the class.
+        //7.Convert the class percentage to a letter grade using the scale found in our class syllabus.
+
+        public async void AutoGrading(){
+            //for each submission
+
+            var queryStu = from st in db.Students
+                        select st.UId;
+
+            //var query = from a in db
+            //               select st.UId;
+
+
+
+        }
+
         /*******End code to modify********/
     }
 }
