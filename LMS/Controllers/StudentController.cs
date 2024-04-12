@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using LMS.Models.LMSModels;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.SignalR;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 // For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
@@ -122,17 +123,12 @@ namespace LMS.Controllers
                         into joined
 
                         from j in joined.DefaultIfEmpty()
-                            //where j.AIdNavigation.CategoriesNavigation.Class.Course.Dept.Equals(subject) &&
-                            //j.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
-                            //j.AIdNavigation.CategoriesNavigation.Class.Semester.Equals(season) &&
-                            //j.AIdNavigation.CategoriesNavigation.Class.SemesterYear == year
                         select new
                         {
-                            aname = j.AIdNavigation.Name,
-                            cname = j.AIdNavigation.CategoriesNavigation.Name,
-                            due = j.AIdNavigation.Due,
-                            
-                            score = j.Score
+                            aname = a.Name,
+                            cname = a.CategoriesNavigation.Name,
+                            due = a.Due,
+                            score = j != null ? (int?)j.Score : null
                         };
 
             return Json(query.ToArray());
@@ -196,8 +192,6 @@ namespace LMS.Controllers
             {
                 db.Submissions.Add(sub);
             }
-
-
 
             try
             {

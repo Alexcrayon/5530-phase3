@@ -109,7 +109,7 @@ namespace LMS_CustomIdentity.Controllers
         /// "lname" - last name
         /// "uid" - user ID
         /// "dob" - date of birth
-        /// "grade" - the student's grade in this class
+        /// "grade" - the student'c grade in this class
         /// </summary>
         /// <param name="subject">The course subject abbreviation</param>
         /// <param name="num">The course number</param>
@@ -118,7 +118,28 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetStudentsInClass(string subject, int num, string season, int year)
         {
-            return Json(null);
+            var queryClasses = from c in db.Classes
+                               where c.Course.Dept.Equals(subject) &&
+                               c.Course.Number == num &&
+                               c.Semester == season &&
+                               c.SemesterYear == year
+                               select c;
+
+            var query = from c in queryClasses
+                        join e in db.Enrollments
+                        on c.ClassId equals e.ClassId
+                        join s in db.Students
+                        on e.UId equals s.UId
+                        select new
+                        {
+                            fname = s.FirstName,
+                            lname = s.LastName,
+                            uid = s.UId,
+                            dob = s.Dob,
+                            grade = e.Grade
+                        };
+
+            return Json(query.ToArray());
         }
 
 
@@ -229,7 +250,7 @@ namespace LMS_CustomIdentity.Controllers
         /// <param name="year">The year part of the semester for the class the assignment belongs to</param>
         /// <param name="category">The name of the assignment category in the class</param>
         /// <param name="asgname">The name of the assignment</param>
-        /// <param name="uid">The uid of the student who's submission is being graded</param>
+        /// <param name="uid">The uid of the student who'c submission is being graded</param>
         /// <param name="score">The new score for the submission</param>
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
@@ -247,7 +268,7 @@ namespace LMS_CustomIdentity.Controllers
         /// "season" - The season part of the semester in which the class is taught
         /// "year" - The year part of the semester in which the class is taught
         /// </summary>
-        /// <param name="uid">The professor's uid</param>
+        /// <param name="uid">The professor'c uid</param>
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
         {            
