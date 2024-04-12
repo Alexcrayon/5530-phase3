@@ -269,7 +269,7 @@ namespace LMS.Controllers
                                  };
                     if (queryS.Any())
                     {
-                        Json(queryS.First());
+                        return Json(queryS.First());
                     }
                    
                 }
