@@ -5,6 +5,7 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text.Json;
 using System.Threading.Tasks;
 using LMS.Models.LMSModels;
@@ -516,28 +517,78 @@ namespace LMS_CustomIdentity.Controllers
         //Letter grades should be calculated as follows:
 
         //1.If a student does not have a submission for an assignment, the score for that assignment is treated as 0.
+
         //2.If an AssignmentCategory does not have any assignments, it is not included in the calculation.
+
         //3.For each non-empty category in the class:
-        //  - Calculate the percentage of (total points earned / total max points) of all assignments in the category.
-        //  This should be a number between 0.0 - 1.0. For example, if there are 875 possible points spread among various assignments in the category, and the student earned a total of 800 among all assignments in that category, this value should be ~0.914
+        //  - Calculate the percentage of (total pointsScoredPercent earned / total max pointsScoredPercent) of all assignments in the category.
+        //  This should be a number between 0.0 - 1.0. For example, if there are 875 possible pointsScoredPercent spread among various
+        //  assignments in the category, and the student earned a total of 800 among all assignments in that category,
+        //  this value should be ~0.914
+
         //  - Multiply the percentage by the category weight.For example, if the category weight is 15,
         //  then the scaled total for the category is ~13.71 (using the previous example).
-        //4.Compute the total of all scaled category totals from the previous step.IMPORTANT - there is no rule that assignment category weights must sum to 100. Therefore, we have to re-scale in the next step.
-        //5.Compute the scaling factor to make all category weights add up to 100%. This scaling factor is 100 / (sum of all category weights).
-        //6.Multiply the total score you computed in step 4 by the scaling factor you computed in step 5. This is the total percentage the student earned in the class.
+
+        //4.Compute the total of all scaled category totals from the previous step.
+        //IMPORTANT - there is no rule that assignment category weights must sum to 100.
+        //Therefore, we have to re-scale in the next step.
+
+        //5.Compute the scaling factor to make all category weights add up to 100%.
+        //This scaling factor is 100 / (sum of all category weights).
+
+        //6.Multiply the total score you computed in step 4 by the scaling factor you computed in step 5.
+        //This is the total percentage the student earned in the class.
+
         //7.Convert the class percentage to a letter grade using the scale found in our class syllabus.
 
-        public async void AutoGrading(){
-            //for each submission
+        public void AutoGrading() {
 
-            var queryStu = from st in db.Students
-                        select st.UId;
+            // set scores to null with a left join on uid to aid so non submissions are scored as a 0
+            var querySubmissions = from st in db.Students
+                        join s in db.Submissions
+                        on st.UId equals s.UId
+                        into studentSubmissions
+                        from sub in studentSubmissions.DefaultIfEmpty()
+                        select new
+                        {
+                            uid = st.UId,
+                            aid = sub.AId,
+                            score = sub != null ? (int?)sub.AId : 0
+                        };
 
-            //var query = from a in db
-            //               select st.UId;
+            // skips calculating categories with no assignments
+            var queryACategory = from ac in db.AssignmentCategories
+                                 where ac.Assignments.Count() > 0
+                                 select ac;
 
+            double pointsScoredPercent = 0.0;
+            double pointsScored = 0.0;
+            double totalMaxPoints = 0.0;
 
-
+            // for each assignment category
+            foreach (var ac in queryACategory)
+            {
+                // get every assignment in the category
+                foreach (var a in ac.Assignments)
+                {
+                    // then get every submission and compare the submission aID
+                    // to the assignment aID for scoring
+                    foreach (var s in querySubmissions)
+                    {
+                        if (s?.aid == null)
+                        {
+                            continue;
+                        }
+                        else if (a.AId == s.aid)
+                        {
+                            totalMaxPoints = a.MaxPointVal;
+                            pointsScored = (double)s.score;
+                            pointsScoredPercent = pointsScored / totalMaxPoints;
+                            pointsScoredPercent *= 
+                        }
+                    }
+                }
+            }
         }
 
         /*******End code to modify********/
