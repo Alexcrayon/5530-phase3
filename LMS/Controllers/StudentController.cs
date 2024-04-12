@@ -109,21 +109,29 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentsInClass(string subject, int num, string season, int year, string uid)
         {
-            var query = from a in db.Assignments
+            var queryA = from a in db.Assignments
+                         where a.CategoriesNavigation.Class.Course.Dept.Equals(subject) &&
+                         a.CategoriesNavigation.Class.Course.Number == num &&
+                         a.CategoriesNavigation.Class.Semester.Equals(season) &&
+                         a.CategoriesNavigation.Class.SemesterYear == year
+                         select a;
+
+            var query = from a in queryA
                         join s in db.Submissions
                         on new { A = a.AId, B = uid } equals new { A = s.AId, B = s.UId }
                         into joined
 
                         from j in joined.DefaultIfEmpty()
-                        where j.AIdNavigation.CategoriesNavigation.Class.Course.Dept == subject &&
-                        j.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
-                        j.AIdNavigation.CategoriesNavigation.Class.Semester == season &&
-                        j.AIdNavigation.CategoriesNavigation.Class.SemesterYear == year
+                            //where j.AIdNavigation.CategoriesNavigation.Class.Course.Dept.Equals(subject) &&
+                            //j.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
+                            //j.AIdNavigation.CategoriesNavigation.Class.Semester.Equals(season) &&
+                            //j.AIdNavigation.CategoriesNavigation.Class.SemesterYear == year
                         select new
                         {
                             aname = j.AIdNavigation.Name,
                             cname = j.AIdNavigation.CategoriesNavigation.Name,
                             due = j.AIdNavigation.Due,
+                            
                             score = j.Score
                         };
 
