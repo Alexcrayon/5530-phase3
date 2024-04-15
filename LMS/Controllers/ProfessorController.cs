@@ -185,7 +185,7 @@ namespace LMS_CustomIdentity.Controllers
                         c.SemesterYear == year
                         select c.AssignmentCategories;
 
-            if(category != null)
+            if (category != null)
             {
                 var queryA = from q in query.First()
                              where q.Name.Equals(category)
@@ -214,7 +214,7 @@ namespace LMS_CustomIdentity.Controllers
 
                 return Json(queryAll.ToArray());
             }
-            
+
             //return Json(null);
         }
 
@@ -276,7 +276,7 @@ namespace LMS_CustomIdentity.Controllers
                         select c;
 
             Class tempClass = query.SingleOrDefault();
-            if ( tempClass == null)
+            if (tempClass == null)
             {
                 return Json(new { success = false });
             }
@@ -292,8 +292,8 @@ namespace LMS_CustomIdentity.Controllers
 
 
             tempClass.AssignmentCategories.Add(newAc);
-              
-         
+
+
             db.AssignmentCategories.Add(newAc);
 
             try
@@ -304,7 +304,7 @@ namespace LMS_CustomIdentity.Controllers
             {
                 return Json(new { success = false });
             }
-            
+
 
             return Json(new { success = true });
         }
@@ -325,7 +325,7 @@ namespace LMS_CustomIdentity.Controllers
         public IActionResult CreateAssignment(string subject, int num, string season, int year, string category, string asgname, int asgpoints, DateTime asgdue, string asgcontents)
         {
             var query = from ac in db.AssignmentCategories
-                        where ac.Class.Course.Dept.Equals(subject)&&
+                        where ac.Class.Course.Dept.Equals(subject) &&
                         ac.Class.Course.Number == num &&
                         ac.Class.Semester.Equals(season) &&
                         ac.Class.SemesterYear == year &&
@@ -361,7 +361,7 @@ namespace LMS_CustomIdentity.Controllers
                 return Json(new { success = false });
             }
 
-            AutoGrading();
+            AutoGrading(query.First().ClassId);
 
             return Json(new { success = true });
         }
@@ -410,7 +410,7 @@ namespace LMS_CustomIdentity.Controllers
                                time = s.DateTime,
                                score = s.Score
                            };
-                           
+
 
 
             return Json(querySub.ToArray());
@@ -434,7 +434,7 @@ namespace LMS_CustomIdentity.Controllers
             //update score in submission join with assignment
             // see SubmitAssignmentText in student controller
             //auto grading
-            
+
             var query = from a in db.Assignments
                         where a.Name.Equals(asgname) &&
                         a.CategoriesNavigation.Name.Equals(category) &&
@@ -442,13 +442,13 @@ namespace LMS_CustomIdentity.Controllers
                         a.CategoriesNavigation.Class.Semester.Equals(season) &&
                         a.CategoriesNavigation.Class.Course.Number == num &&
                         a.CategoriesNavigation.Class.Course.Dept.Equals(subject)
-                        select a.AId;
+                        select a;
 
-            
+
 
 
             var querySub = from s in db.Submissions
-                           where s.AId == query.First() && s.UId.Equals(uid)
+                           where s.AId == query.First().AId && s.UId.Equals(uid)
                            select s;
 
             Submission subUpdate = querySub.SingleOrDefault();
@@ -471,7 +471,7 @@ namespace LMS_CustomIdentity.Controllers
                 return Json(new { success = false });
             }
 
-            AutoGrading();
+            AutoGrading(query.First().CategoriesNavigation.ClassId);
 
             return Json(new { success = true });
 
@@ -491,7 +491,7 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetMyClasses(string uid)
         {
-          
+
             var query = from c in db.Classes
                         where c.Teacher.Equals(uid)
                         select new
@@ -534,28 +534,37 @@ namespace LMS_CustomIdentity.Controllers
 
         //7.Convert the class percentage to a letter grade using the scale found in our class syllabus.
 
-        public void AutoGrading() {
+        public void AutoGrading(int ClassID)
+        {
 
             //TODO: we're currently averaging all grades in all classes which is not ideal.
             // We need to restrict our grading to specific classes and add the grade to the grade
             // relative to the student's uid and class in the enrollments database
 
+            var queryUid = from e in db.Enrollments
+                           where e.ClassId == ClassID
+                           select e.UId;
+
+
+
             // set scores to null with a left join on uid to aid so non submissions are scored as a 0
-            var querySubmissions = from st in db.Students
-                        join s in db.Submissions
-                        on st.UId equals s.UId
-                        into studentSubmissions
-                        from sub in studentSubmissions.DefaultIfEmpty()
-                        select new
-                        {
-                            uid = st.UId,
-                            aid = sub.AId,
-                            score = sub != null ? (int?)sub.AId : 0
-                        };
+
+            var querySubmissions = from st in queryUid
+                                   join s in db.Submissions
+                                   on st equals s.UId
+                                   into studentSubmissions
+                                   from sub in studentSubmissions.DefaultIfEmpty()
+                                       //AIdNavigation.CategoriesNavigation.ClassId == ClassID
+                                   select new
+                                   {
+                                       uid = st,
+                                       aid = sub.AId,
+                                       score = sub != null ? (int?)sub.AId : 0
+                                   };
 
             // skips calculating categories with no assignments
             var queryACategory = from ac in db.AssignmentCategories
-                                 where ac.Assignments.Count() > 0
+                                 where ac.Assignments.Count() > 0 && ac.ClassId == ClassID
                                  select ac;
 
             double pointsScoredPercent = 0.0;
@@ -563,93 +572,125 @@ namespace LMS_CustomIdentity.Controllers
             double totalMaxPoints = 0.0;
             double scaleFactor = 0.0;
             double finalGrade = 0.0;
-            string letterGrade;
+            string letterGrade = "";
 
             // for each assignment category
-            foreach (var ac in queryACategory)
+            foreach (var st in queryUid)
             {
-                // get every assignment in the category
-                foreach (var a in ac.Assignments)
+
+
+
+                foreach (var ac in queryACategory)
                 {
-                    // then get every submission and compare the submission aID
-                    // to the assignment aID for scoring
-                    foreach (var s in querySubmissions)
+                    // get every assignment in the category
+                    foreach (var a in ac.Assignments)
                     {
-                        if (s?.aid == null)
+                        // then get every submission and compare the submission aID
+                        // to the assignment aID for scoring
+                        //
+                        foreach (var s in querySubmissions)
                         {
-                            continue;
-                        }
-                        else if (a.AId == s.aid)
-                        {
-                            // add up the pointsScored and max possible for each category
-                            totalMaxPoints += a.MaxPointVal;
-                            pointsScored += (double)s.score;
+
+                            if (s?.aid == null && st == s?.uid)
+                            {
+                                totalMaxPoints += a.MaxPointVal;
+                                continue;
+                            }
+                            else if (a.AId == s.aid && st == s.uid)
+                            {
+
+                                // add up the pointsScored and max possible for each category
+                                totalMaxPoints += a.MaxPointVal;
+                                pointsScored += (double)s.score;
+                            }
                         }
                     }
+
+                    // generate a percentage from the average
+                    pointsScoredPercent += (pointsScored / totalMaxPoints) * ac.GradingWeight;
+                }
+                // take the average to get a more accurate percent based on letter grading
+                scaleFactor = 100 / pointsScoredPercent;
+
+                // calculate final grade
+                finalGrade = pointsScoredPercent * scaleFactor;
+
+                if (finalGrade <= 100 && finalGrade >= 93)
+                {
+                    letterGrade = "A";
+                }
+                else if (finalGrade < 93 && finalGrade >= 90)
+                {
+                    letterGrade = "A-";
+                }
+                else if (finalGrade < 90 && finalGrade >= 87)
+                {
+                    letterGrade = "B+";
+                }
+                else if (finalGrade < 87 && finalGrade >= 83)
+                {
+                    letterGrade = "B";
+                }
+                else if (finalGrade < 83 && finalGrade >= 80)
+                {
+                    letterGrade = "B-";
+                }
+                else if (finalGrade < 80 && finalGrade >= 77)
+                {
+                    letterGrade = "C+";
+                }
+                else if (finalGrade < 77 && finalGrade >= 73)
+                {
+                    letterGrade = "C";
+                }
+                else if (finalGrade < 73 && finalGrade >= 70)
+                {
+                    letterGrade = "C-";
+                }
+                else if (finalGrade < 70 && finalGrade >= 67)
+                {
+                    letterGrade = "D+";
+                }
+                else if (finalGrade < 67 && finalGrade >= 63)
+                {
+                    letterGrade = "D";
+                }
+                else if (finalGrade < 63 && finalGrade >= 60)
+                {
+                    letterGrade = "D-";
+                }
+                else if (finalGrade < 60)
+                {
+                    letterGrade = "E";
                 }
 
-                // generate a percentage from the average
-                pointsScoredPercent += (pointsScored / totalMaxPoints) * ac.GradingWeight;
-            }
-            // take the average to get a more accurate percent based on letter grading
-            scaleFactor = 100 / pointsScoredPercent;
+                var queryGradeUpdate = from e in db.Enrollments
+                                       where e.UId == st && e.ClassId == ClassID
+                                       select e;
 
-            // calculate final grade
-            finalGrade = pointsScoredPercent * scaleFactor;
+                Enrollment enrollment = queryGradeUpdate.SingleOrDefault();
 
-            if(finalGrade <= 100 && finalGrade >= 93)
-            {
-                letterGrade = "A";
-            }
-            else if (finalGrade < 93 && finalGrade >= 90)
-            {
-                letterGrade = "A-";
-            }
-            else if (finalGrade < 90 && finalGrade >= 87)
-            {
-                letterGrade = "B+";
-            }
-            else if (finalGrade < 87 && finalGrade >= 83)
-            {
-                letterGrade = "B";
-            }
-            else if (finalGrade < 83 && finalGrade >= 80)
-            {
-                letterGrade = "B-";
-            }
-            else if (finalGrade < 80 && finalGrade >= 77)
-            {
-                letterGrade = "C+";
-            }
-            else if (finalGrade < 77 && finalGrade >= 73)
-            {
-                letterGrade = "C";
-            }
-            else if (finalGrade < 73 && finalGrade >= 70)
-            {
-                letterGrade = "C-";
-            }
-            else if (finalGrade < 70 && finalGrade >= 67)
-            {
-                letterGrade = "D+";
-            }
-            else if (finalGrade < 67 && finalGrade >= 63)
-            {
-                letterGrade = "D";
-            }
-            else if (finalGrade < 63 && finalGrade >= 60)
-            {
-                letterGrade = "D-";
-            }
-            else if (finalGrade < 60)
-            {
-                letterGrade = "E";
-            }
+                if (enrollment != null)
+                {
+                    enrollment.Grade = letterGrade;
+                }
 
 
+                try
+                {
+                    db.SaveChanges();
+                }
+                catch
+                {
+
+                }
+
+
+
+            }
+
+            /*******End code to modify********/
         }
-
-        /*******End code to modify********/
     }
 }
 
