@@ -324,13 +324,6 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult CreateAssignment(string subject, int num, string season, int year, string category, string asgname, int asgpoints, DateTime asgdue, string asgcontents)
         {
-            //same above
-            //foreign key in assignmentCategory
-
-
-            //auto grading
-
-
             var query = from ac in db.AssignmentCategories
                         where ac.Class.Course.Dept.Equals(subject)&&
                         ac.Class.Course.Number == num &&
@@ -543,6 +536,10 @@ namespace LMS_CustomIdentity.Controllers
 
         public void AutoGrading() {
 
+            //TODO: we're currently averaging all grades in all classes which is not ideal.
+            // We need to restrict our grading to specific classes and add the grade to the grade
+            // relative to the student's uid and class in the enrollments database
+
             // set scores to null with a left join on uid to aid so non submissions are scored as a 0
             var querySubmissions = from st in db.Students
                         join s in db.Submissions
@@ -564,6 +561,9 @@ namespace LMS_CustomIdentity.Controllers
             double pointsScoredPercent = 0.0;
             double pointsScored = 0.0;
             double totalMaxPoints = 0.0;
+            double scaleFactor = 0.0;
+            double finalGrade = 0.0;
+            string letterGrade;
 
             // for each assignment category
             foreach (var ac in queryACategory)
@@ -581,14 +581,72 @@ namespace LMS_CustomIdentity.Controllers
                         }
                         else if (a.AId == s.aid)
                         {
-                            totalMaxPoints = a.MaxPointVal;
-                            pointsScored = (double)s.score;
-                            pointsScoredPercent = pointsScored / totalMaxPoints;
-                            pointsScoredPercent *= 
+                            // add up the pointsScored and max possible for each category
+                            totalMaxPoints += a.MaxPointVal;
+                            pointsScored += (double)s.score;
                         }
                     }
                 }
+
+                // generate a percentage from the average
+                pointsScoredPercent += (pointsScored / totalMaxPoints) * ac.GradingWeight;
             }
+            // take the average to get a more accurate percent based on letter grading
+            scaleFactor = 100 / pointsScoredPercent;
+
+            // calculate final grade
+            finalGrade = pointsScoredPercent * scaleFactor;
+
+            if(finalGrade <= 100 && finalGrade >= 93)
+            {
+                letterGrade = "A";
+            }
+            else if (finalGrade < 93 && finalGrade >= 90)
+            {
+                letterGrade = "A-";
+            }
+            else if (finalGrade < 90 && finalGrade >= 87)
+            {
+                letterGrade = "B+";
+            }
+            else if (finalGrade < 87 && finalGrade >= 83)
+            {
+                letterGrade = "B";
+            }
+            else if (finalGrade < 83 && finalGrade >= 80)
+            {
+                letterGrade = "B-";
+            }
+            else if (finalGrade < 80 && finalGrade >= 77)
+            {
+                letterGrade = "C+";
+            }
+            else if (finalGrade < 77 && finalGrade >= 73)
+            {
+                letterGrade = "C";
+            }
+            else if (finalGrade < 73 && finalGrade >= 70)
+            {
+                letterGrade = "C-";
+            }
+            else if (finalGrade < 70 && finalGrade >= 67)
+            {
+                letterGrade = "D+";
+            }
+            else if (finalGrade < 67 && finalGrade >= 63)
+            {
+                letterGrade = "D";
+            }
+            else if (finalGrade < 63 && finalGrade >= 60)
+            {
+                letterGrade = "D-";
+            }
+            else if (finalGrade < 60)
+            {
+                letterGrade = "E";
+            }
+
+
         }
 
         /*******End code to modify********/
