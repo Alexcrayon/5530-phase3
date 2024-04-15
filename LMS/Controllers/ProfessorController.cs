@@ -183,17 +183,20 @@ namespace LMS_CustomIdentity.Controllers
                         c.Course.Number == num &&
                         c.Semester.Equals(season) &&
                         c.SemesterYear == year
-                        select c.AssignmentCategories;
+                        select c;
+
+            
 
             if (category != null)
             {
-                var queryA = from q in query.First()
-                             where q.Name.Equals(category)
-                             from a in q.Assignments
+                var queryA = from q in query
+                             from ac in q.AssignmentCategories
+                             where ac.Name.Equals(category)
+                             from a in ac.Assignments
                              select new
                              {
                                  aname = a.Name,
-                                 cname = q.Name,
+                                 cname = ac.Name,
                                  due = a.Due,
                                  submissions = a.Submissions.Count
                              };
@@ -202,12 +205,13 @@ namespace LMS_CustomIdentity.Controllers
             }
             else
             {
-                var queryAll = from q in query.First()
-                               from a in q.Assignments
+                var queryAll = from q in query
+                               from ac in q.AssignmentCategories
+                               from a in ac.Assignments
                                select new
                                {
                                    aname = a.Name,
-                                   cname = q.Name,
+                                   cname = ac.Name,
                                    due = a.Due,
                                    submissions = a.Submissions.Count
                                };
@@ -290,9 +294,8 @@ namespace LMS_CustomIdentity.Controllers
             };
 
 
-
             tempClass.AssignmentCategories.Add(newAc);
-
+              
 
             db.AssignmentCategories.Add(newAc);
 
@@ -346,7 +349,7 @@ namespace LMS_CustomIdentity.Controllers
                 Categories = cate.AcId
             };
 
-
+            
             cate.Assignments.Add(newA);
 
             db.Assignments.Add(newA);
