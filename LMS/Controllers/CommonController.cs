@@ -198,7 +198,9 @@ namespace LMS.Controllers
                         s.AIdNavigation.CategoriesNavigation.Class.Course.Number == num &&
                         s.AIdNavigation.CategoriesNavigation.Class.Course.DeptNavigation.SubjectAbbreviation.Equals(subject)
                         select s.Contents;
-
+            if (!query.Any()) { 
+                return Content("");
+            }
 
             return Content(query.First());
         }

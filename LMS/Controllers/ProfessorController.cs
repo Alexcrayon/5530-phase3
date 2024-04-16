@@ -445,13 +445,17 @@ namespace LMS_CustomIdentity.Controllers
                         a.CategoriesNavigation.Class.Semester.Equals(season) &&
                         a.CategoriesNavigation.Class.Course.Number == num &&
                         a.CategoriesNavigation.Class.Course.Dept.Equals(subject)
-                        select a;
+                        select new {
+                            aid = a.AId,
+                            classId = a.CategoriesNavigation.ClassId
+                            
+                        };
 
-
+            
 
 
             var querySub = from s in db.Submissions
-                           where s.AId == query.First().AId && s.UId.Equals(uid)
+                           where s.AId == query.First().aid && s.UId.Equals(uid)
                            select s;
 
             Submission subUpdate = querySub.SingleOrDefault();
@@ -474,7 +478,7 @@ namespace LMS_CustomIdentity.Controllers
                 return Json(new { success = false });
             }
 
-            AutoGrading(query.First().CategoriesNavigation.ClassId);
+            AutoGrading(query.First().classId);
 
             return Json(new { success = true });
 
@@ -548,7 +552,7 @@ namespace LMS_CustomIdentity.Controllers
                            where e.ClassId == ClassID
                            select e.UId;
 
-
+            
 
             // set scores to null with a left join on uid to aid so non submissions are scored as a 0
 
@@ -562,13 +566,17 @@ namespace LMS_CustomIdentity.Controllers
                                    {
                                        uid = st,
                                        aid = sub.AId,
-                                       score = sub != null ? (int?)sub.AId : 0
+                                       score = sub.Score,
+                                       maxPts = sub.AIdNavigation.MaxPointVal
                                    };
+
 
             // skips calculating categories with no assignments
             var queryACategory = from ac in db.AssignmentCategories
                                  where ac.Assignments.Count() > 0 && ac.ClassId == ClassID
                                  select ac;
+
+           
 
             double pointsScoredPercent = 0.0;
             double pointsScored = 0.0;
@@ -578,35 +586,51 @@ namespace LMS_CustomIdentity.Controllers
             string letterGrade = "";
 
             // for each assignment category
-            foreach (var st in queryUid)
+            foreach (var st in queryUid.ToList())
             {
 
-
-
-                foreach (var ac in queryACategory)
+                foreach (var ac in queryACategory.ToList())
                 {
                     // get every assignment in the category
-                    foreach (var a in ac.Assignments)
+                    var queryAssign = from a in db.Assignments
+                                      where a.CategoriesNavigation.ClassId == ClassID &&
+                                      ac.AcId == a.CategoriesNavigation.AcId
+                                      select a;
+
+                    List<Tuple<uint,int>> aidList = new ();
+                    foreach (var a in queryAssign.ToList())
                     {
+                        aidList.Add(new Tuple<uint,int>(a.MaxPointVal,a.AId));
+                    }
+                        
+                    foreach (var aid in aidList)
+                    {
+                       
                         // then get every submission and compare the submission aID
                         // to the assignment aID for scoring
                         //
-                        foreach (var s in querySubmissions)
+                        foreach (var s in querySubmissions.ToList())
                         {
 
-                            if (s?.aid == null && st == s?.uid)
-                            {
-                                totalMaxPoints += a.MaxPointVal;
-                                continue;
-                            }
-                            else if (a.AId == s.aid && st == s.uid)
+                            
+                            //if (s?.aid == null && st == s?.uid)
+                            //{
+                            //    totalMaxPoints += a.MaxPointVal;
+                            //    continue;
+                            //}
+
+
+                            if (aidList.Contains(new Tuple<uint, int>(s.maxPts,s.aid)))
                             {
 
                                 // add up the pointsScored and max possible for each category
-                                totalMaxPoints += a.MaxPointVal;
+                                totalMaxPoints += s.maxPts;
                                 pointsScored += (double)s.score;
                             }
+
                         }
+                        totalMaxPoints += aid.Item1;
+                        
                     }
 
                     // generate a percentage from the average
@@ -678,17 +702,14 @@ namespace LMS_CustomIdentity.Controllers
                     enrollment.Grade = letterGrade;
                 }
 
+            }
 
-                try
-                {
-                    db.SaveChanges();
-                }
-                catch
-                {
-
-                }
-
-
+            try
+            {
+                db.SaveChanges();
+            }
+            catch
+            {
 
             }
 
