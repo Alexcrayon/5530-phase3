@@ -213,27 +213,9 @@ namespace LMS.Controllers
                 End = TimeOnly.FromDateTime(end),
                 Teacher = instructor
             };
-            //var timeQuery = from c in db.Classes
-            //                where c.Loc == classCreated.Loc &&
-            //                (c.Start <= classCreated.Start &&
-            //                c.End >= classCreated.End) || 
-            //                (c.Start > classCreated.Start && c.End >= classCreated.End)//|| 
-            //                //(c.Start <= classCreated.Start && c.End < classCreated.End)
-            //                select c;
-            // 
 
             var timeQuery = from c in db.Classes
                              where c.Loc == classCreated.Loc &&
-                             //case 1 within both start and end
-
-                             //(classCreated.Start <= c.Start && c.End <= classCreated.End ) ||
-
-                             //(c.Start <= classCreated.Start && classCreated.End <= c.End)||
-
-
-                             //(c.Start >= classCreated.Start && c.End < classCreated.End) ||
-                             //(c.Start < classCreated.Start && c.End >= classCreated.End)
-
                              ((c.Start <= classCreated.End && c.End >= classCreated.Start) ||
                                 (c.End >= classCreated.Start && c.Start <= classCreated.End))
                             select c;
