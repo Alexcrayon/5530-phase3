@@ -174,10 +174,6 @@ namespace LMS_CustomIdentity.Controllers
         public IActionResult GetAssignmentsInCategory(string subject, int num, string season, int year, string category)
         {
 
-            //get category from class 
-            //get array of assignment
-
-            //get class
             var query = from c in db.Classes
                         where c.Course.Dept.Equals(subject) &&
                         c.Course.Number == num &&
@@ -185,8 +181,7 @@ namespace LMS_CustomIdentity.Controllers
                         c.SemesterYear == year
                         select c;
 
-            
-
+         
             if (category != null)
             {
                 var queryA = from q in query
@@ -219,7 +214,6 @@ namespace LMS_CustomIdentity.Controllers
                 return Json(queryAll.ToArray());
             }
 
-            //return Json(null);
         }
 
 
@@ -237,8 +231,6 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetAssignmentCategories(string subject, int num, string season, int year)
         {
-            //get class
-            //get array of assignmentcategories
             var query = from c in db.Classes
                         where c.Course.Dept.Equals(subject) &&
                         c.Course.Number == num &&
@@ -250,8 +242,6 @@ namespace LMS_CustomIdentity.Controllers
                             name = ac.Name,
                             weight = ac.GradingWeight
                         };
-
-
 
             return Json(query.ToArray());
         }
@@ -389,8 +379,7 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetSubmissionsToAssignment(string subject, int num, string season, int year, string category, string asgname)
         {
-            //join assignment and submission table
-
+            
             var query = from a in db.Assignments
                         where a.CategoriesNavigation.Class.Course.Dept.Equals(subject) &&
                         a.CategoriesNavigation.Class.Course.Number == num &&
@@ -415,7 +404,6 @@ namespace LMS_CustomIdentity.Controllers
                            };
 
 
-
             return Json(querySub.ToArray());
         }
 
@@ -434,9 +422,6 @@ namespace LMS_CustomIdentity.Controllers
         /// <returns>A JSON object containing success = true/false</returns>
         public IActionResult GradeSubmission(string subject, int num, string season, int year, string category, string asgname, string uid, int score)
         {
-            //update score in submission join with assignment
-            // see SubmitAssignmentText in student controller
-            //auto grading
 
             var query = from a in db.Assignments
                         where a.Name.Equals(asgname) &&
@@ -450,8 +435,6 @@ namespace LMS_CustomIdentity.Controllers
                             classId = a.CategoriesNavigation.ClassId
                             
                         };
-
-            
 
 
             var querySub = from s in db.Submissions
@@ -514,40 +497,14 @@ namespace LMS_CustomIdentity.Controllers
 
 
 
-        //Letter grades should be calculated as follows:
-
-        //1.If a student does not have a submission for an assignment, the score for that assignment is treated as 0.
-
-        //2.If an AssignmentCategory does not have any assignments, it is not included in the calculation.
-
-        //3.For each non-empty category in the class:
-        //  - Calculate the percentage of (total pointsScoredPercent earned / total max pointsScoredPercent) of all assignments in the category.
-        //  This should be a number between 0.0 - 1.0. For example, if there are 875 possible pointsScoredPercent spread among various
-        //  assignments in the category, and the student earned a total of 800 among all assignments in that category,
-        //  this value should be ~0.914
-
-        //  - Multiply the percentage by the category weight.For example, if the category weight is 15,
-        //  then the scaled total for the category is ~13.71 (using the previous example).
-
-        //4.Compute the total of all scaled category totals from the previous step.
-        //IMPORTANT - there is no rule that assignment category weights must sum to 100.
-        //Therefore, we have to re-scale in the next step.
-
-        //5.Compute the scaling factor to make all category weights add up to 100%.
-        //This scaling factor is 100 / (sum of all category weights).
-
-        //6.Multiply the total score you computed in step 4 by the scaling factor you computed in step 5.
-        //This is the total percentage the student earned in the class.
-
-        //7.Convert the class percentage to a letter grade using the scale found in our class syllabus.
-
+        /// <summary>
+        /// AutoGrading when CreateAssignment or GradeSubmission get called
+        /// this is for every student in the input class
+        /// </summary>
+        /// <param name="ClassID"></param>
         public void AutoGrading(int ClassID)
         {
-
-            //TODO: we're currently averaging all grades in all classes which is not ideal.
-            // We need to restrict our grading to specific classes and add the grade to the grade
-            // relative to the student's uid and class in the enrollments database
-
+            // all students in this class
             var queryUid = from e in db.Enrollments
                            where e.ClassId == ClassID
                            select e.UId;
@@ -603,13 +560,7 @@ namespace LMS_CustomIdentity.Controllers
                                           aid = a.AId,
                                           maxPts = a.MaxPointVal
                                       };
-                    // construct a list contain all assignments under this catagory
-                    //List<Tuple<uint,int>> assignList = new ();
-                    //foreach (var a in queryAssign.ToList())
-                    //{
-                    //    assignList.Add(new Tuple<uint,int>(a.MaxPointVal,a.AId));
-                    //}
-                        
+       
                     foreach (var assign in queryAssign.ToList())
                     {
                         bool hasSubmission = false;
@@ -617,7 +568,7 @@ namespace LMS_CustomIdentity.Controllers
                         // to the assignment aID for scoring
                         foreach (var s in querySubmissions.ToList())
                         {
-                            //if (aidList.Contains(new Tuple<uint, int>(s.maxPts,s.aid))) // This is problematic since it will return true more than one time for the same assignment   
+                              
                             if(assign.aid == s.aid && st.Equals(s.uid)) { 
                                 // add up the pointsScored and max possible for each category
                                 totalMaxPoints += assign.maxPts;
