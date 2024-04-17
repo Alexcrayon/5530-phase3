@@ -552,10 +552,7 @@ namespace LMS_CustomIdentity.Controllers
                            where e.ClassId == ClassID
                            select e.UId;
 
-            
-
             // set scores to null with a left join on uid to aid so non submissions are scored as a 0
-
             var querySubmissions = from st in queryUid
                                    join s in db.Submissions
                                    on st equals s.UId
@@ -567,7 +564,6 @@ namespace LMS_CustomIdentity.Controllers
                                        uid = st,
                                        aid = sub.AId,
                                        score = sub.Score,
-                                       maxPts = sub.AIdNavigation.MaxPointVal
                                    };
 
 
@@ -576,13 +572,13 @@ namespace LMS_CustomIdentity.Controllers
                                  where ac.Assignments.Count() > 0 && ac.ClassId == ClassID
                                  select ac;
 
-           
 
-            double pointsScoredPercent = 0.0;
+            double totalPercent = 0.0;
             double pointsScored = 0.0;
             double totalMaxPoints = 0.0;
             double scaleFactor = 0.0;
             double finalGrade = 0.0;
+            double categoryWeight = 0.0;
             string letterGrade = "";
 
             // for each assignment category
@@ -591,57 +587,56 @@ namespace LMS_CustomIdentity.Controllers
 
                 foreach (var ac in queryACategory.ToList())
                 {
+                    totalMaxPoints = 0.0;
+                    pointsScored = 0.0;
+
                     // get every assignment in the category
                     var queryAssign = from a in db.Assignments
                                       where a.CategoriesNavigation.ClassId == ClassID &&
                                       ac.AcId == a.CategoriesNavigation.AcId
-                                      select a;
-
-                    List<Tuple<uint,int>> aidList = new ();
-                    foreach (var a in queryAssign.ToList())
-                    {
-                        aidList.Add(new Tuple<uint,int>(a.MaxPointVal,a.AId));
-                    }
+                                      select new 
+                                      {
+                                          aid = a.AId,
+                                          maxPts = a.MaxPointVal
+                                      };
+                    // construct a list contain all assignments under this catagory
+                    //List<Tuple<uint,int>> assignList = new ();
+                    //foreach (var a in queryAssign.ToList())
+                    //{
+                    //    assignList.Add(new Tuple<uint,int>(a.MaxPointVal,a.AId));
+                    //}
                         
-                    foreach (var aid in aidList)
+                    foreach (var assign in queryAssign.ToList())
                     {
-                       
+                        bool hasSubmission = false;
                         // then get every submission and compare the submission aID
                         // to the assignment aID for scoring
-                        //
                         foreach (var s in querySubmissions.ToList())
                         {
-
-                            
-                            //if (s?.aid == null && st == s?.uid)
-                            //{
-                            //    totalMaxPoints += a.MaxPointVal;
-                            //    continue;
-                            //}
-
-
-                            if (aidList.Contains(new Tuple<uint, int>(s.maxPts,s.aid)))
-                            {
-
+                            //if (aidList.Contains(new Tuple<uint, int>(s.maxPts,s.aid))) // This is problematic since it will return true more than one time for the same assignment   
+                            if(assign.aid == s.aid) { 
                                 // add up the pointsScored and max possible for each category
-                                totalMaxPoints += s.maxPts;
+                                totalMaxPoints += assign.maxPts;
                                 pointsScored += (double)s.score;
+                                hasSubmission = true;
                             }
-
                         }
-                        totalMaxPoints += aid.Item1;
-                        
+                        //treat no submission as 0 score, still add the max points to total max points of this category
+                        if (!hasSubmission)                       
+                            totalMaxPoints += assign.maxPts;
                     }
-
-                    // generate a percentage from the average
-                    pointsScoredPercent += (pointsScored / totalMaxPoints) * ac.GradingWeight;
+                    // generate a total percentage by sum up all categories percentage point
+                    totalPercent += (pointsScored / totalMaxPoints) * ac.GradingWeight;
+                    // calculate the sum of all category grading weight
+                    categoryWeight += ac.GradingWeight;
                 }
-                // take the average to get a more accurate percent based on letter grading
-                scaleFactor = 100 / pointsScoredPercent;
+                // scale factor for the sum of category weight in case it's not 100
+                scaleFactor = 100 / categoryWeight;
 
                 // calculate final grade
-                finalGrade = pointsScoredPercent * scaleFactor;
+                finalGrade = totalPercent * scaleFactor;
 
+                // convert to letter grade
                 if (finalGrade <= 100 && finalGrade >= 93)
                 {
                     letterGrade = "A";
