@@ -573,24 +573,28 @@ namespace LMS_CustomIdentity.Controllers
                                  select ac;
 
 
-            double totalPercent = 0.0;
-            double pointsScored = 0.0;
-            double totalMaxPoints = 0.0;
+            double totalPercent;
+            double pointsScored;
+            double totalMaxPoints;
             double scaleFactor = 0.0;
             double finalGrade = 0.0;
-            double categoryWeight = 0.0;
+            double categoriesWeight;
             string letterGrade = "";
 
             // for each assignment category
             foreach (var st in queryUid.ToList())
             {
+                //reset for each student
+                totalPercent = 0.0;
+                categoriesWeight = 0.0;
 
                 foreach (var ac in queryACategory.ToList())
                 {
+                    //reset for each category
                     totalMaxPoints = 0.0;
                     pointsScored = 0.0;
 
-                    // get every assignment in the category
+                    // get every assignment in the category in this class
                     var queryAssign = from a in db.Assignments
                                       where a.CategoriesNavigation.ClassId == ClassID &&
                                       ac.AcId == a.CategoriesNavigation.AcId
@@ -614,7 +618,7 @@ namespace LMS_CustomIdentity.Controllers
                         foreach (var s in querySubmissions.ToList())
                         {
                             //if (aidList.Contains(new Tuple<uint, int>(s.maxPts,s.aid))) // This is problematic since it will return true more than one time for the same assignment   
-                            if(assign.aid == s.aid) { 
+                            if(assign.aid == s.aid && st.Equals(s.uid)) { 
                                 // add up the pointsScored and max possible for each category
                                 totalMaxPoints += assign.maxPts;
                                 pointsScored += (double)s.score;
@@ -628,10 +632,10 @@ namespace LMS_CustomIdentity.Controllers
                     // generate a total percentage by sum up all categories percentage point
                     totalPercent += (pointsScored / totalMaxPoints) * ac.GradingWeight;
                     // calculate the sum of all category grading weight
-                    categoryWeight += ac.GradingWeight;
+                    categoriesWeight += ac.GradingWeight;
                 }
                 // scale factor for the sum of category weight in case it's not 100
-                scaleFactor = 100 / categoryWeight;
+                scaleFactor = 100 / categoriesWeight;
 
                 // calculate final grade
                 finalGrade = totalPercent * scaleFactor;
