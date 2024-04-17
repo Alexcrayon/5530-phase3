@@ -197,11 +197,6 @@ namespace LMS.Areas.Identity.Pages.Account
         string CreateNewUser( string firstName, string lastName, DateTime DOB, string departmentAbbrev, string role )
         {
            
-
-            // (select max(uID) as x from Administrators) union(select max(uID) as x from Professors)
-            // union(select max(uID) as x from Students) order by x desc limit 1;
-
-            // TODO: need to be tested after common controller is implemented 
             var queryAd =
                 (from ad in db.Administrators
                 select ad.UId).Max();
@@ -215,14 +210,23 @@ namespace LMS.Areas.Identity.Pages.Account
               (from p in db.Professors
               select p.UId).Max();
 
-            string maxuid = new List<string> { queryAd, queryS, queryP }.Max();
-            
-            //increment the max uid by 1 to create the new uid
-            int newUid = Int32.Parse(maxuid.Substring(1)) + 1;
 
-            //format it with necessary 0 padding
-            string uID = "u" + newUid.ToString("D7");
-          
+            string uID;
+            if (!queryAd.Any() && !queryS.Any() && !queryP.Any())
+            {
+                uID = "u0000000";
+            }
+            else
+            {
+
+                string maxuid = new List<string> { queryAd, queryS, queryP }.Max();
+
+                //increment the max uid by 1 to create the new uid
+                int newUid = Int32.Parse(maxuid.Substring(1)) + 1;
+
+                //format it with necessary 0 padding
+                uID = "u" + newUid.ToString("D7");
+            }
 
             if (role.Equals("Administrator"))
             {

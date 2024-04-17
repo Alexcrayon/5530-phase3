@@ -216,13 +216,12 @@ namespace LMS.Controllers
 
             var timeQuery = from c in db.Classes
                              where c.Loc == classCreated.Loc &&
+                             c.SemesterYear == classCreated.SemesterYear &&
+                             c.Semester.Equals(classCreated.Semester)&&
                              ((c.Start <= classCreated.End && c.End >= classCreated.Start) ||
                                 (c.End >= classCreated.Start && c.Start <= classCreated.End))
                             select c;
                             
-
-
-
 
 
             if (timeQuery.Any())
