@@ -55,8 +55,7 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetCatalog()
         {
-            // TODO: figure out how to split the json queries into matching by dept
-            // maybe consider combining it into one query?
+
             var query = from d in db.Departments
                         select new
                         {
@@ -91,28 +90,7 @@ namespace LMS.Controllers
         /// <returns>The JSON array</returns>
         public IActionResult GetClassOfferings(string subject, int number)
         {
-            //var query = from c in db.Courses
-            //            where c.Number.Equals(number)
-            //            && c.Name.Equals(subject)
-            //            select
-            //                from j in c.Classes
-            //                select new
-            //                {
-            //                    season = j.Semester,
-            //                    year = j.SemesterYear,
-            //                    location = j.Loc,
-            //                    start = j.Start,
-            //                    end = j.End,
-            //                    fname = from p in db.Professors
-            //                            where p.UId == j.Teacher
-            //                            select p.FirstName,
-            //                    lname = from p in db.Professors
-            //                            where p.UId == j.Teacher
-            //                            select p.LastName
-            //                };
 
-
-            //rewrite the query
             var query = from c in db.Classes
                         where c.Course.Number == number &&
                         c.Course.Dept == subject
@@ -145,21 +123,7 @@ namespace LMS.Controllers
         public IActionResult GetAssignmentContents(string subject, int num, string season, int year, 
             string category, string asgname)
         {
-            // subject is in departments as subjectabbreviation
-            // num is in courses as number
-            // season is in classes as semester
-            // year is in classes as semesteryear
-            // category is in assignmentcategory as name
-            // asgname is in assignments as name
 
-            //var query = from s in db.Courses
-            //            where s.DeptNavigation.SubjectAbbreviation == subject
-            //            select new
-            //            {
-
-            //            };
-
-            // use navigation go backward from assignment to category to class to course, etc. 
             var query = from a in db.Assignments
                         where a.Name.Equals(asgname) &&
                         a.CategoriesNavigation.Name.Equals(category)&&
