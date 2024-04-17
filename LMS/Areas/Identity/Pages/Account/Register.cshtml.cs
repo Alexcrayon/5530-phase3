@@ -182,6 +182,8 @@ namespace LMS.Areas.Identity.Pages.Account
             }
         }
 
+        /* Implemented by Chris Silva and Alex Cao for CS5530, Spring 2024 */
+
         /*******Begin code to modify********/
 
         /// <summary>
@@ -236,8 +238,7 @@ namespace LMS.Areas.Identity.Pages.Account
                 admin.Dob = DateOnly.FromDateTime(DOB);
                 admin.UId = uID;
 
-                db.Administrators.Add( admin );
-                //db.Add(admin);
+                db.Administrators.Add( admin );;
                 try
                 {
                     db.SaveChanges();

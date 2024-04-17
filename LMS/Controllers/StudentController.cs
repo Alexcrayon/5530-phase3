@@ -62,6 +62,7 @@ namespace LMS.Controllers
             return View();
         }
 
+        /* Implemented by Chris Silva and Alex Cao for CS5530, Spring 2024 */
 
         /*******Begin code to modify********/
 
